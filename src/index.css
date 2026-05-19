@@ -1,9 +1,8 @@
-/* ── Pulse Global Styles ─────────────────────────────────────────── */
-
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
 :root {
-  /* Pink/Rose palette */
+  /* Brand */
   --rose-50:  #fff0f5;
   --rose-100: #ffe0ec;
   --rose-200: #ffc2d9;
@@ -12,112 +11,79 @@
   --rose-500: #f0366a;
   --rose-600: #d41f57;
 
-  /* Neutrals */
-  --stone-50:  #fdf8f9;
-  --stone-100: #f5eef1;
-  --stone-200: #e8dce2;
-  --stone-300: #d4c3cc;
-  --stone-500: #9e8595;
-  --stone-700: #5a4652;
-  --stone-900: #2e1f28;
+  /* Light mode */
+  --bg:           #f2f2f2;
+  --bg-card:      #ffffff;
+  --bg-hover:     #f7f7f7;
+  --bg-input:     #ffffff;
+  --sidebar-bg:   #1a1025;
+  --topbar-bg:    #1a1025;
+  --border:       #e0e0e0;
+  --border-soft:  #ececec;
+  --text-primary:    #1a1a1a;
+  --text-secondary:  #444;
+  --text-muted:      #888;
+  --accent:       var(--rose-400);
+  --accent-soft:  var(--rose-100);
+  --accent-text:  var(--rose-600);
+  --divider:      1px solid var(--border);
 
-  /* Accent */
-  --lavender: #c4a8d8;
-  --mint:     #a8d8c4;
-  --gold:     #e8c87a;
-
-  /* Light mode tokens */
-  --bg:          var(--stone-50);
-  --bg-card:     #ffffff;
-  --bg-hover:    var(--rose-50);
-  --bg-input:    #ffffff;
-  --border:      var(--stone-200);
-  --border-soft: var(--rose-100);
-  --text-primary:   var(--stone-900);
-  --text-secondary: var(--stone-700);
-  --text-muted:     var(--stone-500);
-  --accent:      var(--rose-400);
-  --accent-soft: var(--rose-100);
-  --accent-text: var(--rose-600);
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 3px rgba(46,31,40,.06), 0 1px 2px rgba(46,31,40,.04);
-  --shadow-md: 0 4px 12px rgba(46,31,40,.08), 0 2px 4px rgba(46,31,40,.04);
-  --shadow-rose: 0 4px 16px rgba(240,54,106,.18);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.07);
+  --shadow-md: 0 4px 14px rgba(0,0,0,.10);
+  --shadow-rose: 0 4px 16px rgba(240,54,106,.20);
 
-  --font-ui:   'Nunito', system-ui, sans-serif;
-  --font-rp:   'Lora', Georgia, serif;
+  --font-ui: 'Nunito', system-ui, sans-serif;
+  --font-rp:  'Lora', Georgia, serif;
+
+  --topbar-h: 52px;
+  --left-w: 260px;
+  --right-w: 280px;
 }
 
 [data-theme="dark"] {
-  --bg:          #1a1220;
-  --bg-card:     #231829;
-  --bg-hover:    #2d1e38;
-  --bg-input:    #1a1220;
-  --border:      #3d2b4a;
-  --border-soft: #4a2d58;
-  --text-primary:   #f5e8f0;
-  --text-secondary: #c9a8be;
-  --text-muted:     #8a6a7e;
-  --accent:      var(--rose-400);
-  --accent-soft: rgba(249,100,142,.15);
-  --accent-text: var(--rose-300);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
-  --shadow-md: 0 4px 12px rgba(0,0,0,.35);
+  --bg:           #111016;
+  --bg-card:      #1c1825;
+  --bg-hover:     #25203a;
+  --bg-input:     #1c1825;
+  --sidebar-bg:   #13101e;
+  --topbar-bg:    #13101e;
+  --border:       #2e2840;
+  --border-soft:  #261f38;
+  --text-primary:    #f0eaf8;
+  --text-secondary:  #c5b8d8;
+  --text-muted:      #7a6d8f;
+  --accent-soft:  rgba(249,100,142,.13);
+  --accent-text:  var(--rose-300);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { font-family: var(--font-ui); background: var(--bg); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; transition: background .2s, color .2s; }
 
-html { font-size: 16px; }
-
-body {
-  font-family: var(--font-ui);
-  background: var(--bg);
-  color: var(--text-primary);
-  line-height: 1.6;
-  transition: background .25s, color .25s;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 
-/* Links */
 a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* Buttons base */
 button { font-family: var(--font-ui); cursor: pointer; }
+input, textarea, select { font-family: var(--font-ui); background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 9px 13px; font-size: 13.5px; outline: none; transition: border-color .15s, box-shadow .15s; width: 100%; }
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-/* Input base */
-input, textarea, select {
-  font-family: var(--font-ui);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  width: 100%;
-}
-input:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
+/* Divider utility */
+.divider { height: 1px; background: var(--border); margin: 0; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  html { font-size: 15px; }
-}
-@media (max-width: 480px) {
-  html { font-size: 14px; }
-}
+@keyframes fadeIn  { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fadeDown{ from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+@keyframes spin    { to { transform:rotate(360deg) } }
+@keyframes modalIn { from { opacity:0; transform:scale(.96) } to { opacity:1; transform:scale(1) } }
+@keyframes toastIn { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }
+@keyframes toastOut{ from { opacity:1 } to { opacity:0; transform:translateX(20px) } }
+
+@media (max-width: 1100px) { :root { --right-w: 0px; } }
+@media (max-width: 780px)  { :root { --left-w: 0px; } html { font-size: 14px; } }
