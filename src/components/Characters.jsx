@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../lib/auth'
-import { Avatar, Btn, Modal, Badge, ImageUpload, toast, Card, Spinner, Icon } from './ui'
+import { Avatar, Btn, Modal, Badge, ImageUpload, toast, Card, Spinner, Icon, EmojiPicker, EmojiTextarea, EmojiInput } from './ui'
 import { supabase } from '../lib/supabase'
 
 // ── Karakter Seçici Overlay ────────────────────────────────────────
@@ -302,7 +302,7 @@ export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile }) =
           )}
         </div>
         <div style={{ padding:'0 24px 20px' }}>
-          <div style={{ marginTop:-36, marginBottom:12 }}>
+          <div style={{ marginTop:-44, marginBottom:12, position:'relative', zIndex:2 }}>
             <div style={{ border:'4px solid var(--bg-card)', borderRadius:'50%', display:'inline-block' }}>
               <Avatar name={displayName} src={char.avatar_url} size={88} />
             </div>
