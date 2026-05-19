@@ -7,6 +7,7 @@ import { Messages } from './components/Messages'
 import { AdminPanel } from './components/Admin'
 import { NotificationBell } from './components/Notifications'
 import { Avatar, Btn, Spinner, ToastContainer } from './components/ui'
+import { supabase } from './lib/supabase'
 import './index.css'
 
 const useDarkMode = () => {
@@ -21,51 +22,84 @@ const useDarkMode = () => {
   return [dark, () => setDark(d => !d)]
 }
 
-// ── Pulse Live (Explore) ──────────────────────────────────────────
+// ── Pulse Live / Explore ──────────────────────────────────────────
 const Explore = ({ onViewProfile }) => {
-  const [chars, setChars] = useState([])
+  const [chars, setChars]   = useState([])
+  const [gridView, setGrid] = useState(true)
+  const [search, setSearch] = useState('')
+
   useEffect(() => {
-    import('./lib/supabase').then(({ supabase }) =>
-      supabase.from('characters').select('*, players(username)').order('name').then(({ data }) => setChars(data || []))
-    )
+    supabase.from('characters').select('*, players(username)').order('name').then(({ data }) => setChars(data || []))
   }, [])
+
+  const filtered = chars.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.tagline?.toLowerCase().includes(search.toLowerCase()))
+
   return (
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: 'var(--text-primary)' }}>📡 Pulse Live — Karakterler & Sayfalar</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 14 }}>
-        {chars.map(c => (
-          <div key={c.id} onClick={() => onViewProfile(c)}
-            style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-soft)', borderRadius: 16, padding: '20px 14px', textAlign: 'center', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all .2s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.boxShadow='var(--shadow-md)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.borderColor='var(--border-soft)'; e.currentTarget.style.boxShadow='var(--shadow-sm)' }}>
-            <Avatar name={c.name} src={c.avatar_url} size={56} />
-            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginTop: 10, lineHeight: 1.3 }}>{c.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>@{c.players?.username}</div>
-            {c.tagline && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.4 }}>{c.tagline}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>📡 Pulse Live</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Karakter ara..." style={{ height: 34, fontSize: 13, width: 180 }} />
+          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', borderRadius: 8, padding: 3, border: '1px solid var(--border)' }}>
+            <button onClick={() => setGrid(true)}  style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: gridView ? 'var(--bg-card)' : 'transparent', cursor: 'pointer', fontSize: 15 }}>⊞</button>
+            <button onClick={() => setGrid(false)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: !gridView ? 'var(--bg-card)' : 'transparent', cursor: 'pointer', fontSize: 15 }}>☰</button>
           </div>
-        ))}
+        </div>
       </div>
+
+      {gridView ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+          {filtered.map(c => (
+            <div key={c.id} onClick={() => onViewProfile(c)}
+              style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-soft)', borderRadius: 16, padding: '18px 12px', textAlign: 'center', cursor: 'pointer', transition: 'all .2s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.boxShadow='var(--shadow-md)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.borderColor='var(--border-soft)'; e.currentTarget.style.boxShadow='' }}>
+              <Avatar name={c.name} src={c.avatar_url} size={56} />
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginTop: 10, lineHeight: 1.3 }}>{c.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>@{c.players?.username}</div>
+              {c.tagline && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 5, lineHeight: 1.4 }}>{c.tagline}</div>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map(c => (
+            <div key={c.id} onClick={() => onViewProfile(c)}
+              style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-soft)', borderRadius: 14, padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, transition: 'all .2s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.boxShadow='var(--shadow-md)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border-soft)'; e.currentTarget.style.boxShadow='' }}>
+              <Avatar name={c.name} src={c.avatar_url} size={48} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{c.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{c.players?.username}</div>
+                {c.tagline && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{c.tagline}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Ana Shell ─────────────────────────────────────────────────────
+// ── Shell ─────────────────────────────────────────────────────────
 const Shell = () => {
   const { player, profile, activeChar, characters, loading, signOut } = useAuth()
   const [dark, toggleDark] = useDarkMode()
   const [tab, setTab]           = useState('feed')
   const [charScreen, setCharScreen] = useState(false)
-  const [viewingChar, setViewingChar] = useState(null)  // profil sayfası
+  const [viewingChar, setViewingChar] = useState(null)
 
-  const goToProfile = (char) => { setViewingChar(char); setTab('profile') }
+  const goToProfile = (char) => {
+    if (!char?.id) return
+    setViewingChar(char)
+    setTab('profile')
+  }
   const backFromProfile = () => { setViewingChar(null); setTab('explore') }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <Spinner size={36} />
-        <p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: 14 }}>Yükleniyor...</p>
-      </div>
+      <div style={{ textAlign: 'center' }}><Spinner size={36} /><p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: 14 }}>Yükleniyor...</p></div>
     </div>
   )
 
@@ -76,7 +110,7 @@ const Shell = () => {
       <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-soft)', borderRadius: 24, padding: 40, maxWidth: 400, textAlign: 'center', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>💗</div>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>Pulse'a Hoş Geldin!</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>Hesabın admin tarafından inceleniyor. Onaylandıktan sonra Pulse'a katılabilirsin.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>Hesabın admin tarafından inceleniyor.</p>
         <Btn variant="ghost" onClick={signOut} style={{ marginTop: 20 }}>Çıkış Yap</Btn>
       </div>
     </div>
@@ -100,27 +134,25 @@ const Shell = () => {
   ]
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', paddingBottom: window.innerWidth < 768 ? 70 : 0 }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--bg-card)', borderBottom: '1.5px solid var(--border-soft)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto', padding: '0 16px', height: 58, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setTab('feed')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button onClick={() => { setTab('feed'); setViewingChar(null) }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
             <span style={{ fontSize: 22 }}>💗</span>
             <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.5 }}>Pulse</span>
           </button>
-
           <nav style={{ display: 'flex', gap: 2, flex: 1, justifyContent: 'center' }}>
             {NAV.map(n => (
               <button key={n.id} onClick={() => { setTab(n.id); setViewingChar(null) }}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius-full)', border: 'none', background: tab===n.id ? 'var(--accent-soft)' : 'transparent', color: tab===n.id ? 'var(--accent-text)' : 'var(--text-muted)', fontWeight: tab===n.id ? 700 : 500, fontSize: 13, cursor: 'pointer', transition: 'all .15s', fontFamily: 'var(--font-ui)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius-full)', border: 'none', background: tab===n.id ? 'var(--accent-soft)' : 'transparent', color: tab===n.id ? 'var(--accent-text)' : 'var(--text-muted)', fontWeight: tab===n.id ? 700 : 500, fontSize: 13, cursor: 'pointer', transition: 'all .15s', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => { if(tab!==n.id) e.currentTarget.style.background='var(--bg-hover)' }}
                 onMouseLeave={e => { if(tab!==n.id) e.currentTarget.style.background='transparent' }}>
                 <span>{n.icon}</span>
-                <span style={{ display: window.innerWidth < 600 ? 'none' : 'inline' }}>{n.label}</span>
+                <span style={{ display: window.innerWidth < 640 ? 'none' : 'inline' }}>{n.label}</span>
               </button>
             ))}
           </nav>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
             <NotificationBell />
             <button onClick={toggleDark} style={{ background: 'none', border: '1.5px solid var(--border-soft)', borderRadius: 'var(--radius-full)', padding: '6px 10px', cursor: 'pointer', fontSize: 14, transition: 'border-color .2s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor='var(--accent)'}
@@ -138,18 +170,19 @@ const Shell = () => {
         </div>
       </header>
 
-      <main style={{ maxWidth: tab==='dm' ? 1000 : 680, margin: '0 auto', padding: '24px 16px' }}>
+      <main style={{ maxWidth: tab==='dm' ? 1000 : 700, margin: '0 auto', padding: '24px 16px' }}>
         {tab === 'feed'    && <Feed onViewProfile={goToProfile} />}
         {tab === 'explore' && !viewingChar && <Explore onViewProfile={goToProfile} />}
-        {tab === 'profile' && viewingChar  && <CharacterProfile char={viewingChar} onBack={backFromProfile} />}
+        {(tab === 'profile' || (tab === 'explore' && viewingChar)) && viewingChar && <CharacterProfile char={viewingChar} onBack={backFromProfile} onViewProfile={goToProfile} />}
         {tab === 'dm'      && <Messages />}
         {tab === 'admin'   && <AdminPanel />}
       </main>
 
-      <nav style={{ display: window.innerWidth > 768 ? 'none' : 'flex', position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg-card)', borderTop: '1.5px solid var(--border-soft)', padding: '8px 0', justifyContent: 'space-around', zIndex: 90 }}>
+      {/* Mobil alt nav */}
+      <nav style={{ display: window.innerWidth > 768 ? 'none' : 'flex', position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg-card)', borderTop: '1.5px solid var(--border-soft)', padding: '6px 0', justifyContent: 'space-around', zIndex: 90 }}>
         {[...NAV, { id: 'char', icon: '🫀', label: 'Karakterim' }].map(n => (
           <button key={n.id} onClick={() => n.id==='char' ? setCharScreen(true) : setTab(n.id)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: (tab===n.id && n.id!=='char') ? 'var(--accent)' : 'var(--text-muted)', fontSize: 20, cursor: 'pointer', padding: '4px 12px', fontFamily: 'var(--font-ui)' }}>
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', color: (tab===n.id && n.id!=='char') ? 'var(--accent)' : 'var(--text-muted)', fontSize: 20, cursor: 'pointer', padding: '4px 12px', fontFamily: 'var(--font-ui)' }}>
             {n.icon}
             <span style={{ fontSize: 10, fontWeight: 600 }}>{n.label}</span>
           </button>
@@ -162,9 +195,5 @@ const Shell = () => {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <Shell />
-    </AuthProvider>
-  )
+  return <AuthProvider><Shell /></AuthProvider>
 }
