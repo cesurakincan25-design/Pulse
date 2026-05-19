@@ -36,28 +36,23 @@ const EmbedPlayer = ({ embed }) => {
   return null
 }
 
-// ── Smart Image — Instagram tarzı boyutlandırma ───────────────────
+// ── Smart Image — aspect ratio koruyan, kenarsız ─────────────────
 const SmartImage = ({ src, onClick }) => {
-  const [ratio, setRatio] = useState(null) // height/width
-  const onLoad = e => setRatio(e.target.naturalHeight / e.target.naturalWidth)
-  // Portrait (ratio>1): 4:5 gibi crop, Landscape (ratio<1): full width
-  const isPortrait = ratio && ratio > 1.1
-  const isSquare   = ratio && ratio >= 0.85 && ratio <= 1.1
+  const [dims, setDims] = useState(null)
+  const onLoad = e => {
+    const w = e.target.naturalWidth, h = e.target.naturalHeight
+    setDims({ w, h })
+  }
+  // Görsel yüklenince kendi oranını kullan, max genişlik %100
+  // Portrait: max 500px yükseklik ile sınırla
+  // Landscape: doğal yükseklik, max 480px
+  const isPortrait = dims && dims.h > dims.w
+  const paddingPct = dims ? Math.min((dims.h / dims.w) * 100, isPortrait ? 120 : 80) : 60
+
   return (
-    <div onClick={onClick} style={{
-      marginTop:10, borderRadius:10, overflow:'hidden',
-      cursor:onClick?'pointer':'default', width:'100%', lineHeight:0,
-      maxHeight: isPortrait ? 560 : 480,
-      background: 'var(--bg)'
-    }}>
-      <img src={src} alt="" onLoad={onLoad} style={{
-        width:'100%',
-        height: isPortrait ? '560px' : isSquare ? '480px' : 'auto',
-        objectFit: isPortrait||isSquare ? 'cover' : 'contain',
-        objectPosition: 'center top',
-        display:'block',
-        maxHeight: isPortrait ? 560 : 480,
-      }} />
+    <div onClick={onClick} style={{ marginTop:10, borderRadius:10, overflow:'hidden', cursor:onClick?'pointer':'default', width:'100%', position:'relative', paddingBottom: dims ? `${paddingPct}%` : '60%', background:'var(--bg-hover)' }}>
+      <img src={src} alt="" onLoad={onLoad}
+        style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', objectPosition:'center top', display:'block', borderRadius:10 }} />
     </div>
   )
 }
@@ -457,6 +452,7 @@ export const Feed = ({ onViewProfile }) => {
   const [posts, setPosts]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [activePost, setActivePost] = useState(null)
+  const [gridView, setGridView] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -504,6 +500,13 @@ export const Feed = ({ onViewProfile }) => {
   return (
     <div>
       <PostComposer onPosted={load} />
+      {/* Grid/Liste toggle */}
+      <div style={{ display:'flex', justifyContent:'flex-end', padding:'8px 16px', background:'var(--bg-card)', borderBottom:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', gap:2, background:'var(--bg)', borderRadius:7, padding:2, border:'1px solid var(--border)' }}>
+          <button onClick={()=>setGridView(false)} style={{ padding:'4px 9px', borderRadius:5, border:'none', background:!gridView?'var(--bg-card)':'transparent', cursor:'pointer', color:!gridView?'var(--text-primary)':'var(--text-muted)', transition:'all .15s' }}><Icon name="bars" /></button>
+          <button onClick={()=>setGridView(true)}  style={{ padding:'4px 9px', borderRadius:5, border:'none', background:gridView?'var(--bg-card)':'transparent', cursor:'pointer', color:gridView?'var(--text-primary)':'var(--text-muted)', transition:'all .15s' }}><Icon name="grid-2" /></button>
+        </div>
+      </div>
       {loading && <div style={{ display:'flex', justifyContent:'center', padding:32 }}><Spinner /></div>}
       {!loading && posts.length===0 && (
         <div style={{ textAlign:'center', padding:'48px 16px', color:'var(--text-muted)', background:'var(--bg-card)' }}>
@@ -511,12 +514,30 @@ export const Feed = ({ onViewProfile }) => {
           <p style={{ fontWeight:600 }}>Pulse Feed sessiz...</p>
         </div>
       )}
-      {posts.map(post=>(
-        <PostCard key={post.id} post={post}
-          canEdit={post.player_id===player.id||profile?.role==='admin'}
-          onReact={handleReact} onDelete={handleDelete} onComment={load}
-          onViewProfile={onViewProfile} onClick={openPost} />
-      ))}
+      {/* Grid görünümü */}
+      {gridView ? (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:2, background:'var(--border)' }}>
+          {posts.map(post=>(
+            <div key={post.id} onClick={()=>openPost(post)} style={{ aspectRatio:'1', overflow:'hidden', cursor:'pointer', background:'var(--bg-card)', position:'relative' }}>
+              {post.image_url
+                ? <img src={post.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center top', display:'block' }} />
+                : <div style={{ padding:10, fontSize:12, color:'var(--text-secondary)', lineHeight:1.5, height:'100%', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', overflow:'hidden', fontFamily:post.post_type==='rp'?'var(--font-rp)':'var(--font-ui)' }}>{post.content?.slice(0,60)}</div>
+              }
+              <div style={{ position:'absolute', bottom:6, left:8, display:'flex', gap:8, fontSize:11, color:'rgba(255,255,255,.9)', textShadow:'0 1px 3px rgba(0,0,0,.8)', fontWeight:600 }}>
+                <span>💗 {post.likes_count}</span>
+                <span>💬 {post.comments_count}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        posts.map(post=>(
+          <PostCard key={post.id} post={post}
+            canEdit={post.player_id===player.id||profile?.role==='admin'}
+            onReact={handleReact} onDelete={handleDelete} onComment={load}
+            onViewProfile={onViewProfile} onClick={openPost} />
+        ))
+      )}
       {activePost && (
         <PostModal post={activePost} onClose={()=>setActivePost(null)}
           onReact={(post,emoji)=>{ handleReact(post,emoji); setActivePost(p=>({...p,myReaction:emoji})) }}

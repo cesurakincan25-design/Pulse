@@ -29,7 +29,7 @@ export const CharacterSwitcher = ({ onSelect }) => {
         <p style={{ color:'var(--text-muted)', marginTop:6, fontSize:15, fontStyle:'italic' }}>What's your Pulse today?</p>
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:18, justifyContent:'center', maxWidth:820, position:'relative', zIndex:1 }}>
-        {characters.map(char => (
+        {[...characters].filter(ch=>!search||(ch.display_name||ch.name).toLowerCase().includes(search.toLowerCase())).sort((a,b)=>(a.display_name||a.name).localeCompare(b.display_name||b.name)).map(char => (
           <div key={char.id} onMouseEnter={()=>setHover(char.id)} onMouseLeave={()=>setHover(null)}
             style={{ width:155, background:'var(--bg-card)', border:`2px solid ${hover===char.id?'var(--accent)':'var(--border)'}`, borderRadius:18, padding:'18px 12px 14px', textAlign:'center', transition:'all .2s', transform:hover===char.id?'translateY(-4px)':'none', boxShadow:hover===char.id?'var(--shadow-rose)':'var(--shadow-sm)', position:'relative' }}>
             {hover===char.id && (
