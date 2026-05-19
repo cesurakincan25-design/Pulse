@@ -1,0 +1,123 @@
+/* ── Pulse Global Styles ─────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  /* Pink/Rose palette */
+  --rose-50:  #fff0f5;
+  --rose-100: #ffe0ec;
+  --rose-200: #ffc2d9;
+  --rose-300: #ff94bb;
+  --rose-400: #f9648e;
+  --rose-500: #f0366a;
+  --rose-600: #d41f57;
+
+  /* Neutrals */
+  --stone-50:  #fdf8f9;
+  --stone-100: #f5eef1;
+  --stone-200: #e8dce2;
+  --stone-300: #d4c3cc;
+  --stone-500: #9e8595;
+  --stone-700: #5a4652;
+  --stone-900: #2e1f28;
+
+  /* Accent */
+  --lavender: #c4a8d8;
+  --mint:     #a8d8c4;
+  --gold:     #e8c87a;
+
+  /* Light mode tokens */
+  --bg:          var(--stone-50);
+  --bg-card:     #ffffff;
+  --bg-hover:    var(--rose-50);
+  --bg-input:    #ffffff;
+  --border:      var(--stone-200);
+  --border-soft: var(--rose-100);
+  --text-primary:   var(--stone-900);
+  --text-secondary: var(--stone-700);
+  --text-muted:     var(--stone-500);
+  --accent:      var(--rose-400);
+  --accent-soft: var(--rose-100);
+  --accent-text: var(--rose-600);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(46,31,40,.06), 0 1px 2px rgba(46,31,40,.04);
+  --shadow-md: 0 4px 12px rgba(46,31,40,.08), 0 2px 4px rgba(46,31,40,.04);
+  --shadow-rose: 0 4px 16px rgba(240,54,106,.18);
+
+  --font-ui:   'Nunito', system-ui, sans-serif;
+  --font-rp:   'Lora', Georgia, serif;
+}
+
+[data-theme="dark"] {
+  --bg:          #1a1220;
+  --bg-card:     #231829;
+  --bg-hover:    #2d1e38;
+  --bg-input:    #1a1220;
+  --border:      #3d2b4a;
+  --border-soft: #4a2d58;
+  --text-primary:   #f5e8f0;
+  --text-secondary: #c9a8be;
+  --text-muted:     #8a6a7e;
+  --accent:      var(--rose-400);
+  --accent-soft: rgba(249,100,142,.15);
+  --accent-text: var(--rose-300);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  transition: background .25s, color .25s;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* Links */
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Buttons base */
+button { font-family: var(--font-ui); cursor: pointer; }
+
+/* Input base */
+input, textarea, select {
+  font-family: var(--font-ui);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+}
+input:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+}
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+}
