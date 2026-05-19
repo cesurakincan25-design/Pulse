@@ -36,7 +36,7 @@ const useFriends = (charId) => {
     setFriends(acc); setPending(pend); setLoading(false)
   }
 
-  useEffect(()=>{ load() },[charId])
+  // useEffect moved to hook return
 
   const sendRequest = async (targetId) => {
     await supabase.from('friends').insert({ character_id:charId, friend_id:targetId, status:'pending' })
@@ -46,12 +46,22 @@ const useFriends = (charId) => {
     await supabase.from('friends').update({ status:'accepted' }).eq('id',requestId)
     toast('Arkadaşlık kabul edildi! 🎉'); load()
   }
+  const [pendingSent, setPendingSent] = useState([])
+
+  const loadSent = async () => {
+    if (!charId) return
+    const { data } = await supabase.from('friends').select('friend_id').eq('character_id',charId).eq('status','pending')
+    setPendingSent((data||[]).map(x=>x.friend_id))
+  }
+
+  useEffect(()=>{ if(charId) { load(); loadSent() } },[charId])
+
   const removeFriend = async (targetId) => {
     await supabase.from('friends').delete().or(`and(character_id.eq.${charId},friend_id.eq.${targetId}),and(character_id.eq.${targetId},friend_id.eq.${charId})`)
     load()
   }
 
-  return { friends, pending, loading, sendRequest, acceptRequest, removeFriend, reload:load }
+  return { friends, pending, pendingSent, loading, sendRequest:async(tid)=>{ await sendRequest(tid); loadSent() }, acceptRequest, removeFriend, reload:load }
 }
 
 // ── DM Input (ayrı bileşen — focus sorununu çözer) ───────────────
@@ -380,7 +390,7 @@ const Shell = () => {
   const [dmTarget, setDmTarget] = useState(null)
   const [allChars, setAllChars] = useState([])
 
-  const { friends, pending, loading:fLoading, sendRequest, acceptRequest, removeFriend, reload:reloadFriends } = useFriends(activeChar?.id)
+  const { friends, pending, pendingSent, loading:fLoading, sendRequest, acceptRequest, removeFriend, reload:reloadFriends } = useFriends(activeChar?.id)
 
   // Tüm aktif karakterleri çek (Explore + sağ sidebar için)
   useEffect(()=>{
@@ -388,10 +398,11 @@ const Shell = () => {
   },[])
 
   // Arkadaşlık durumu helper
-  const friendStatus = (charId) => {
-    if (friends.find(f=>f.id===charId)) return 'friend'
-    if (pending.find(p=>p.id===charId)) return 'pending_received'
-    // sent istekleri için ayrıca kontrol etmek gerekir — basit tutalım
+  const friendStatus = (cid) => {
+    if (!cid || cid === activeChar?.id) return 'self'
+    if (friends.find(f=>f.id===cid)) return 'friend'
+    if (pending.find(p=>p.id===cid)) return 'pending_received'
+    if (pendingSent?.includes(cid)) return 'pending_sent'
     return 'none'
   }
 
