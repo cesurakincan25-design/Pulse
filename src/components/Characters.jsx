@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../lib/auth'
-import { Avatar, Btn, Modal, Badge, ImageUpload, toast, Card, Spinner, Icon, EmojiPicker, EmojiTextarea, EmojiInput } from './ui'
+import { Avatar, Btn, Modal, Badge, ImageUpload, toast, Spinner, Icon, EmojiPicker } from './ui'
+import { EmojiTextarea, EmojiInput } from './Feed'
 import { supabase } from '../lib/supabase'
 
 // ── Karakter Seçici Overlay ────────────────────────────────────────
@@ -164,99 +165,130 @@ export const NewCharacterModal = ({ open, onClose, onCreated }) => {
 
 // ── Karakter Düzenleme ─────────────────────────────────────────────
 export const EditCharacterModal = ({ char, onClose, onSaved }) => {
-  const [f, setF] = useState({})
+  const [name,         setName]         = useState('')
+  const [displayName,  setDisplayName]  = useState('')
+  const [tagline,      setTagline]      = useState('')
+  const [quote,        setQuote]        = useState('')
+  const [bio,          setBio]          = useState('')
+  const [location,     setLocation]     = useState('')
+  const [occupation,   setOccupation]   = useState('')
+  const [gender,       setGender]       = useState('')
+  const [relationship, setRelationship] = useState('')
+  const [birthDate,    setBirthDate]    = useState('')
+  const [avatarUrl,    setAvatarUrl]    = useState('')
+  const [bannerUrl,    setBannerUrl]    = useState('')
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState('basic')
-  const upd = useCallback((k,v) => setF(p=>({...p,[k]:v})),[])
 
   useEffect(() => {
-    if (char) setF({ name:char.name||'', display_name:char.display_name||'', tagline:char.tagline||'', quote:char.quote||'', bio:char.bio||'', location:char.location||'', occupation:char.occupation||'', gender:char.gender||'', relationship:char.relationship||'', birth_date:char.birth_date||'', avatar_url:char.avatar_url||'', banner_url:char.banner_url||'' })
+    if (!char) return
+    setName(char.name||'')
+    setDisplayName(char.display_name||'')
+    setTagline(char.tagline||'')
+    setQuote(char.quote||'')
+    setBio(char.bio||'')
+    setLocation(char.location||'')
+    setOccupation(char.occupation||'')
+    setGender(char.gender||'')
+    setRelationship(char.relationship||'')
+    setBirthDate(char.birth_date||'')
+    setAvatarUrl(char.avatar_url||'')
+    setBannerUrl(char.banner_url||'')
+    setTab('basic')
   }, [char?.id])
 
   const save = async () => {
-    if (!f.name?.trim()) return
+    if (!name.trim()) return
     setLoading(true)
-    const { error } = await supabase.from('characters').update({ name:f.name.trim(), display_name:f.display_name||null, tagline:f.tagline||null, quote:f.quote||null, bio:f.bio||null, location:f.location||null, occupation:f.occupation||null, gender:f.gender||null, relationship:f.relationship||null, birth_date:f.birth_date||null, avatar_url:f.avatar_url||null, banner_url:f.banner_url||null }).eq('id', char.id)
+    const { error } = await supabase.from('characters').update({
+      name: name.trim(), display_name: displayName||null, tagline: tagline||null,
+      quote: quote||null, bio: bio||null, location: location||null,
+      occupation: occupation||null, gender: gender||null,
+      relationship: relationship||null, birth_date: birthDate||null,
+      avatar_url: avatarUrl||null, banner_url: bannerUrl||null,
+    }).eq('id', char.id)
     setLoading(false)
     if (error) { toast('Hata: '+error.message,'error'); return }
     toast('Kaydedildi! ✅'); onSaved?.()
   }
 
-  const F = ({ label, k, placeholder, type='text', area=false }) => (
-    <div>
-      <label style={lbl}>{label}</label>
-      {area
-        ? <textarea value={f[k]||''} onChange={e=>upd(k,e.target.value)} placeholder={placeholder} style={{ minHeight:80, resize:'vertical' }} />
-        : <input type={type} value={f[k]||''} onChange={e=>upd(k,e.target.value)} placeholder={placeholder} />
-      }
-    </div>
-  )
-
-  const tabs = [['basic','<i class="fa-solid fa-user"></i> Temel'],['details','<i class="fa-solid fa-id-card"></i> Detaylar'],['media','<i class="fa-solid fa-image"></i> Görseller']]
+  const tabs = [['basic','Temel'],['details','Detaylar'],['media','Görseller']]
 
   return (
     <Modal open={!!char} onClose={onClose} title={`Düzenle — ${char?.display_name||char?.name||''}`} width={520}>
-      {/* Tab bar */}
-      <div style={{ display:'flex', gap:4, marginBottom:16, background:'var(--bg)', borderRadius:'var(--radius-md)', padding:3, border:'1px solid var(--border)' }}>
-        {tabs.map(([v,l]) => (
-          <button key={v} onClick={()=>setTab(v)} style={{ flex:1, padding:'7px 8px', borderRadius:7, border:'none', background:tab===v?'var(--bg-card)':'transparent', color:tab===v?'var(--text-primary)':'var(--text-muted)', fontWeight:tab===v?700:500, fontSize:12, cursor:'pointer', fontFamily:'var(--font-ui)', transition:'all .15s', boxShadow:tab===v?'var(--shadow-sm)':'none' }} dangerouslySetInnerHTML={{__html:l}} />
+      <div style={{ display:'flex', gap:3, marginBottom:14, background:'var(--bg)', borderRadius:'var(--radius-md)', padding:3, border:'1px solid var(--border)' }}>
+        {tabs.map(([v,l])=>(
+          <button key={v} onClick={()=>setTab(v)} style={{ flex:1, padding:'7px 8px', borderRadius:7, border:'none', background:tab===v?'var(--bg-card)':'transparent', color:tab===v?'var(--text-primary)':'var(--text-muted)', fontWeight:tab===v?700:500, fontSize:12, cursor:'pointer', fontFamily:'var(--font-ui)', transition:'all .15s', boxShadow:tab===v?'var(--shadow-sm)':'none' }}>{l}</button>
         ))}
       </div>
 
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
         {tab==='basic' && <>
-          <F label="Karakter Adı (Gerçek İsim) *" k="name" placeholder="Lalisa Manobal" />
-          <F label="Görünen İsim / Nick" k="display_name" placeholder="Lisa" />
-          <F label="Meslek / Lakap" k="tagline" placeholder="International Assassin · Continental" />
-          <F label="Alıntı / Motto" k="quote" placeholder='"Consistency defines everything."' />
-          <F label="Biyografi" k="bio" placeholder="Karakterin hakkında kısa bilgi..." area />
+          <Lbl t="Karakter Adı (Gerçek İsim) *"><input value={name} onChange={e=>setName(e.target.value)} placeholder="Lalisa Manobal" /></Lbl>
+          <Lbl t="Görünen İsim / Nick"><input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Lisa" /></Lbl>
+          <Lbl t="Meslek / Lakap"><input value={tagline} onChange={e=>setTagline(e.target.value)} placeholder="International Assassin" /></Lbl>
+          <Lbl t="Alıntı / Motto"><input value={quote} onChange={e=>setQuote(e.target.value)} placeholder='"Consistency defines everything."' /></Lbl>
+          <Lbl t="Biyografi">
+            <div style={{ position:'relative' }}>
+              <textarea value={bio} onChange={e=>setBio(e.target.value)} placeholder="Karakter hakkında..." style={{ minHeight:80, resize:'vertical', paddingBottom:32 }} />
+              <div style={{ position:'absolute', bottom:8, right:8 }} onMouseDown={e=>e.preventDefault()}>
+                <EmojiPicker onSelect={e=>setBio(p=>p+e)} />
+              </div>
+            </div>
+          </Lbl>
         </>}
         {tab==='details' && <>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
-            <F label="Şehir / Konum" k="location" placeholder="Tokyo, Shibuya" />
-            <F label="Meslek (detaylı)" k="occupation" placeholder="Racing Driver" />
-            <F label="Cinsiyet" k="gender" placeholder="Kadın / Erkek" />
-            <F label="İlişki Durumu" k="relationship" placeholder="Bekar" />
-            <F label="Doğum Tarihi" k="birth_date" type="date" />
+            <Lbl t="Şehir / Konum"><input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Tokyo, Shibuya" /></Lbl>
+            <Lbl t="Meslek"><input value={occupation} onChange={e=>setOccupation(e.target.value)} placeholder="Racing Driver" /></Lbl>
+            <Lbl t="Cinsiyet"><input value={gender} onChange={e=>setGender(e.target.value)} placeholder="Kadın / Erkek" /></Lbl>
+            <Lbl t="İlişki Durumu"><input value={relationship} onChange={e=>setRelationship(e.target.value)} placeholder="Bekar" /></Lbl>
+            <Lbl t="Doğum Tarihi"><input type="date" value={birthDate} onChange={e=>setBirthDate(e.target.value)} /></Lbl>
           </div>
         </>}
         {tab==='media' && <>
-          <div>
-            <label style={lbl}>Profil Fotoğrafı</label>
+          <Lbl t="Profil Fotoğrafı">
             <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-              <Avatar name={f.display_name||f.name} src={f.avatar_url} size={64} />
+              <Avatar name={displayName||name} src={avatarUrl} size={64} />
               <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
-                <ImageUpload bucket="avatars" path={`avatar-${char?.id}`} onUploaded={v=>upd('avatar_url',v)}>
+                <ImageUpload bucket="avatars" path={`avatar-${char?.id}`} onUploaded={setAvatarUrl}>
                   <Btn variant="soft" size="sm"><Icon name="upload" style={{marginRight:5}} />Yükle</Btn>
                 </ImageUpload>
-                <input value={f.avatar_url||''} onChange={e=>upd('avatar_url',e.target.value)} placeholder="veya resim linki" style={{ fontSize:12, height:30 }} />
+                <input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} placeholder="veya resim linki" style={{ fontSize:12, height:30 }} />
               </div>
             </div>
-          </div>
-          <div>
-            <label style={lbl}>Banner</label>
+          </Lbl>
+          <Lbl t="Banner">
             <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-              {f.banner_url
-                ? <img src={f.banner_url} style={{ height:52, width:130, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)', flexShrink:0 }} />
+              {bannerUrl
+                ? <img src={bannerUrl} style={{ height:52, width:130, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)', flexShrink:0 }} />
                 : <div style={{ height:52, width:130, borderRadius:8, background:'var(--bg)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>Banner yok</div>
               }
               <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
-                <ImageUpload bucket="banners" path={`banner-${char?.id}`} onUploaded={v=>upd('banner_url',v)}>
+                <ImageUpload bucket="banners" path={`banner-${char?.id}`} onUploaded={setBannerUrl}>
                   <Btn variant="soft" size="sm"><Icon name="upload" style={{marginRight:5}} />Yükle</Btn>
                 </ImageUpload>
-                <input value={f.banner_url||''} onChange={e=>upd('banner_url',e.target.value)} placeholder="veya banner linki" style={{ fontSize:12, height:30 }} />
+                <input value={bannerUrl} onChange={e=>setBannerUrl(e.target.value)} placeholder="veya banner linki" style={{ fontSize:12, height:30 }} />
               </div>
             </div>
-          </div>
+          </Lbl>
         </>}
-        <Btn onClick={save} disabled={loading||!f.name?.trim()} fullWidth>{loading?'Kaydediliyor...':'Kaydet'}</Btn>
+        <Btn onClick={save} disabled={loading||!name.trim()} fullWidth>{loading?'Kaydediliyor...':'Kaydet'}</Btn>
       </div>
     </Modal>
   )
 }
 
+const Lbl = ({ t, children }) => (
+  <div>
+    <label style={{ fontSize:12, fontWeight:600, color:'var(--text-muted)', display:'block', marginBottom:4 }}>{t}</label>
+    {children}
+  </div>
+)
+
+
 // ── Karakter Profil Sayfası ────────────────────────────────────────
-export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile }) => {
+export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile, friendStatus, onSendFriend }) => {
   const { player, profile: myProfile, refreshCharacters } = useAuth()
   const [char, setChar]         = useState(initialChar)
   const [posts, setPosts]       = useState([])
@@ -295,11 +327,23 @@ export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile }) =
       <div style={{ background:'var(--bg-card)', borderBottom:'var(--divider)', marginBottom:1 }}>
         <div style={{ height:200, background:char.banner_url?'none':'linear-gradient(135deg,var(--rose-100),var(--rose-200))', position:'relative', overflow:'hidden' }}>
           {char.banner_url && <img src={char.banner_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />}
-          {(isOwner||isAdmin) && (
-            <button onClick={()=>setShowEdit(true)} style={{ position:'absolute', top:12, right:12, background:'rgba(0,0,0,.5)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,.2)', borderRadius:20, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'var(--font-ui)', color:'#fff', display:'flex', alignItems:'center', gap:6 }}>
-              <Icon name="pen" style={{ color:'#fff' }} /> Düzenle
-            </button>
-          )}
+          <div style={{ position:'absolute', top:12, right:12, display:'flex', gap:7 }}>
+            {!isOwner && friendStatus && (() => {
+              const st = friendStatus(char.id)
+              if (st==='friend') return <span style={{ background:'rgba(34,197,94,.8)', backdropFilter:'blur(6px)', border:'none', borderRadius:20, padding:'6px 14px', fontSize:12, fontWeight:700, color:'#fff' }}>✓ Arkadaş</span>
+              if (st==='pending_sent') return <span style={{ background:'rgba(0,0,0,.5)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,.2)', borderRadius:20, padding:'6px 14px', fontSize:12, color:'rgba(255,255,255,.7)' }}>İstek Gönderildi</span>
+              return (
+                <button onClick={()=>onSendFriend?.(char.id)} style={{ background:'rgba(249,100,142,.8)', backdropFilter:'blur(6px)', border:'none', borderRadius:20, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'var(--font-ui)', color:'#fff', display:'flex', alignItems:'center', gap:6 }}>
+                  <Icon name="user-plus" style={{ color:'#fff' }} /> Arkadaş Ekle
+                </button>
+              )
+            })()}
+            {(isOwner||isAdmin) && (
+              <button onClick={()=>setShowEdit(true)} style={{ background:'rgba(0,0,0,.5)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,.2)', borderRadius:20, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'var(--font-ui)', color:'#fff', display:'flex', alignItems:'center', gap:6 }}>
+                <Icon name="pen" style={{ color:'#fff' }} /> Düzenle
+              </button>
+            )}
+          </div>
         </div>
         <div style={{ padding:'0 24px 20px' }}>
           <div style={{ marginTop:-44, marginBottom:12, position:'relative', zIndex:2 }}>
