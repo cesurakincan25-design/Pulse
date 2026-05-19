@@ -54,66 +54,94 @@ const useFriends = (charId) => {
   return { friends, pending, loading, sendRequest, acceptRequest, removeFriend, reload:load }
 }
 
+// ── DM Input (ayrı bileşen — focus sorununu çözer) ───────────────
+const DMInput = ({ onSend }) => {
+  const [val, setVal] = useState('')
+  const ref = useRef()
+  const send = () => {
+    if (!val.trim()) return
+    onSend(val.trim()); setVal('')
+  }
+  const insertEmoji = e => {
+    const el = ref.current; if(!el) return
+    const s=el.selectionStart, en=el.selectionEnd
+    const nv = val.slice(0,s)+e+val.slice(en)
+    setVal(nv)
+    requestAnimationFrame(()=>{ el.focus(); el.setSelectionRange(s+e.length,s+e.length) })
+  }
+  return (
+    <div style={{ padding:'8px 10px', borderTop:'1px solid var(--border)', display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
+      <div style={{ flex:1, position:'relative' }}>
+        <input ref={ref} value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder="Mesaj yaz..." style={{ height:36, paddingRight:40, fontSize:13 }} />
+        <div style={{ position:'absolute', right:6, top:'50%', transform:'translateY(-50%)' }} onMouseDown={e=>e.preventDefault()}>
+          <EmojiPicker onSelect={insertEmoji} />
+        </div>
+      </div>
+      <button onClick={send} disabled={!val.trim()}
+        style={{ background:'var(--accent)', border:'none', borderRadius:8, width:36, height:36, cursor:val.trim()?'pointer':'default', color:'#fff', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, opacity:val.trim()?1:.4 }}>
+        <Icon name="paper-plane" />
+      </button>
+    </div>
+  )
+}
+
 // ── DM Popup ─────────────────────────────────────────────────────
 const DMPopup = ({ target, onClose, activeChar }) => {
   const [messages, setMessages] = useState([])
-  const [input, setInput]       = useState('')
   const [convoId, setConvoId]   = useState(null)
   const [loading, setLoading]   = useState(true)
-  const bottomRef = useRef()
+  const bottomRef  = useRef()
   const channelRef = useRef()
 
-  useEffect(()=>{ if(target&&activeChar) initConvo(); return ()=>{ if(channelRef.current) supabase.removeChannel(channelRef.current) } },[target?.id,activeChar?.id])
+  useEffect(()=>{
+    if(target&&activeChar) initConvo()
+    return ()=>{ if(channelRef.current) supabase.removeChannel(channelRef.current) }
+  },[target?.id, activeChar?.id])
+
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}) },[messages])
 
   const initConvo = async () => {
     setLoading(true)
     const { data:m1 } = await supabase.from('conversation_members').select('conversation_id').eq('character_id',activeChar.id)
-    const myIds = (m1||[]).map(x=>x.conversation_id)
-    let found = null
+    const myIds=(m1||[]).map(x=>x.conversation_id)
+    let found=null
     for (const cid of myIds) {
       const { data } = await supabase.from('conversation_members').select('character_id').eq('conversation_id',cid).eq('character_id',target.id)
       if (data?.length) { found=cid; break }
     }
     if (!found) {
-      const { data:c } = await supabase.from('conversations').insert({}).select().single()
-      await supabase.from('conversation_members').insert([{conversation_id:c.id,character_id:activeChar.id},{conversation_id:c.id,character_id:target.id}])
-      found=c.id
+      const { data:conv } = await supabase.from('conversations').insert({}).select().single()
+      await supabase.from('conversation_members').insert([{conversation_id:conv.id,character_id:activeChar.id},{conversation_id:conv.id,character_id:target.id}])
+      found=conv.id
     }
     setConvoId(found)
     const { data:msgs } = await supabase.from('messages').select('*').eq('conversation_id',found).order('created_at').limit(60)
     setMessages(msgs||[])
     setLoading(false)
-    const ch = supabase.channel(`dm-popup-${found}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`conversation_id=eq.${found}`},p=>setMessages(prev=>[...prev,p.new])).subscribe()
-    channelRef.current = ch
+    const ch = supabase.channel(`dm-${found}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`conversation_id=eq.${found}`},p=>setMessages(prev=>[...prev,p.new])).subscribe()
+    channelRef.current=ch
   }
 
-  const send = async () => {
-    if (!input.trim()||!convoId) return
-    const text=input.trim(); setInput('')
+  const handleSend = async text => {
+    if (!convoId) return
     await supabase.from('messages').insert({conversation_id:convoId,character_id:activeChar.id,content:text})
     await supabase.from('conversations').update({updated_at:new Date().toISOString()}).eq('id',convoId)
   }
 
-  const insertEmoji = e => setInput(p=>p+e)
-
   return (
-    <div style={{ position:'fixed', bottom:0, right:24, width:320, background:'var(--bg-card)', border:'1px solid var(--border)', borderBottom:'none', borderRadius:'14px 14px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,.2)', zIndex:500, display:'flex', flexDirection:'column', height:400, animation:'fadeIn .2s ease' }}>
-      {/* Header */}
+    <div style={{ position:'fixed', bottom:0, right:24, width:320, background:'var(--bg-card)', border:'1px solid var(--border)', borderBottom:'none', borderRadius:'14px 14px 0 0', boxShadow:'0 -4px 24px rgba(0,0,0,.3)', zIndex:500, display:'flex', flexDirection:'column', height:400, animation:'fadeIn .2s ease' }}>
       <div style={{ display:'flex', alignItems:'center', gap:9, padding:'11px 14px', borderBottom:'1px solid var(--border)', background:'var(--topbar-bg)', borderRadius:'14px 14px 0 0', flexShrink:0 }}>
         <Avatar name={target.display_name||target.name} src={target.avatar_url} size={34} />
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:13, fontWeight:700, color:'#f0eaf8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{target.display_name||target.name}</div>
         </div>
-        <button onClick={onClose} style={{ background:'rgba(255,255,255,.1)', border:'none', cursor:'pointer', color:'#f0eaf8', fontSize:14, padding:'3px 7px', borderRadius:6, lineHeight:1 }}>×</button>
+        <button onClick={onClose} style={{ background:'rgba(255,255,255,.1)', border:'none', cursor:'pointer', color:'#f0eaf8', fontSize:18, padding:'2px 8px', borderRadius:6, lineHeight:1 }}>×</button>
       </div>
-
-      {/* Messages */}
       <div style={{ flex:1, overflowY:'auto', padding:'10px 12px', display:'flex', flexDirection:'column', gap:7 }}>
         {loading && <div style={{ textAlign:'center', padding:16 }}><Spinner size={20} /></div>}
-        {!loading && messages.length===0 && <p style={{ textAlign:'center', color:'var(--text-muted)', fontSize:12, marginTop:16 }}>Henüz mesaj yok. İlk mesajı sen at!</p>}
+        {!loading&&messages.length===0 && <p style={{ textAlign:'center', color:'var(--text-muted)', fontSize:12, marginTop:16 }}>İlk mesajı sen at!</p>}
         {messages.map(m=>{
-          const isMine = m.character_id===activeChar?.id
+          const isMine=m.character_id===activeChar?.id
           return (
             <div key={m.id} style={{ display:'flex', justifyContent:isMine?'flex-end':'flex-start' }}>
               <div style={{ maxWidth:'80%', background:isMine?'var(--accent)':'var(--bg)', border:isMine?'none':'1px solid var(--border)', borderRadius:isMine?'14px 14px 3px 14px':'14px 14px 14px 3px', padding:'8px 12px', fontSize:13, color:isMine?'#fff':'var(--text-primary)', lineHeight:1.5, wordBreak:'break-word' }}>
@@ -124,19 +152,7 @@ const DMPopup = ({ target, onClose, activeChar }) => {
         })}
         <div ref={bottomRef} />
       </div>
-
-      {/* Input */}
-      <div style={{ padding:'8px 10px', borderTop:'1px solid var(--border)', display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
-        <div style={{ flex:1, position:'relative' }}>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder="Mesaj yaz..." style={{ height:36, paddingRight:36, fontSize:13 }} />
-          <div style={{ position:'absolute', right:6, top:'50%', transform:'translateY(-50%)' }}>
-            <EmojiPicker onSelect={insertEmoji} />
-          </div>
-        </div>
-        <button onClick={send} disabled={!input.trim()} style={{ background:'var(--accent)', border:'none', borderRadius:8, padding:'0 12px', height:36, cursor:'pointer', color:'#fff', fontSize:13, opacity:input.trim()?1:.4, flexShrink:0 }}>
-          <Icon name="paper-plane" />
-        </button>
-      </div>
+      <DMInput onSend={handleSend} />
     </div>
   )
 }
@@ -426,7 +442,7 @@ const Shell = () => {
         <main style={{ flex:1, minWidth:0, borderRight:'1px solid var(--border)' }}>
           {tab==='feed' && !viewingChar && <Feed onViewProfile={goToProfile} />}
           {tab==='explore' && !viewingChar && <Explore onViewProfile={goToProfile} sendRequest={sendRequest} friendStatus={friendStatus} activeChar={activeChar} />}
-          {(tab==='profile'||viewingChar) && viewingChar && <CharacterProfile char={viewingChar} onBack={backFromProfile} onViewProfile={goToProfile} />}
+          {(tab==='profile'||viewingChar) && viewingChar && <CharacterProfile char={viewingChar} onBack={backFromProfile} onViewProfile={goToProfile} friendStatus={friendStatus} onSendFriend={sendRequest} />}
           {tab==='admin' && !viewingChar && <AdminPanel />}
         </main>
 
