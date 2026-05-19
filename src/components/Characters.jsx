@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../lib/auth'
 import { Avatar, Btn, Modal, Badge, ImageUpload, toast, Spinner, Icon, EmojiPicker } from './ui'
-import { EmojiTextarea, EmojiInput } from './Feed'
+import { EmojiTextarea, EmojiInput, PostModal } from './Feed'
 import { supabase } from '../lib/supabase'
 
 // ── Karakter Seçici Overlay ────────────────────────────────────────
@@ -295,6 +295,7 @@ export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile, fri
   const [loading, setLoading]   = useState(true)
   const [showEdit, setShowEdit] = useState(false)
   const [gridView, setGridView] = useState(false)
+  const [selectedPost, setSelectedPost] = useState(null)
   const isOwner = char.player_id === player?.id
   const isAdmin = myProfile?.role === 'admin'
 
@@ -414,7 +415,11 @@ export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile, fri
                     </>}
                   </div>
                   <p style={{ fontSize:13.5, lineHeight:1.7, color:'var(--text-secondary)', margin:'0 0 8px', fontFamily:p.post_type==='rp'?'var(--font-rp)':'var(--font-ui)' }}>{p.content}</p>
-                  {p.image_url && <img src={p.image_url} alt="" style={{ width:'100%', borderRadius:8, marginBottom:8, maxHeight:360, objectFit:'cover' }} />}
+                  {p.image_url && (
+                    <div onClick={()=>setSelectedPost(p)} style={{ cursor:'pointer', marginBottom:8, borderRadius:8, overflow:'hidden' }}>
+                      <img src={p.image_url} alt="" style={{ width:'100%', maxHeight:400, objectFit:'cover', display:'block', objectPosition:'center top' }} />
+                    </div>
+                  )}
                   <div style={{ display:'flex', gap:14, fontSize:12, color:'var(--text-muted)' }}>
                     <span><Icon name="heart" style={{marginRight:4}} />{p.likes_count}</span>
                     <span><Icon name="comment" style={{marginRight:4}} />{p.comments_count}</span>
@@ -426,6 +431,7 @@ export const CharacterProfile = ({ char: initialChar, onBack, onViewProfile, fri
         </div>
       )}
       <EditCharacterModal char={showEdit?char:null} onClose={()=>setShowEdit(false)} onSaved={async()=>{ setShowEdit(false); const {data}=await supabase.from('characters').select('*').eq('id',char.id).single(); if(data) setChar(data); refreshCharacters() }} />
+      {selectedPost && <PostModal post={selectedPost} onClose={()=>setSelectedPost(null)} onViewProfile={onViewProfile} onReact={()=>{}} onDelete={async id=>{ await supabase.from('posts').delete().eq('id',id); setPosts(p=>p.filter(x=>x.id!==id)); setSelectedPost(null) }} canEdit={isOwner||isAdmin} player={player} />}
     </div>
   )
 }

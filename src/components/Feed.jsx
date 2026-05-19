@@ -9,8 +9,8 @@ const TYPE_META = {
   post: { label:'Pulse',      color:'rose',     icon:'heart' },
   lore: { label:'Lore',       color:'mint',     icon:'book' },
 }
-const REACTIONS = ['💗','❤️','😂','😢','😡','🎉']
-const REACTION_LABELS = {'💗':'Beğen','❤️':'Sevdim','😂':'Haha','😢':'Üzgün','😡':'Kızgın','🎉':'Yay!'}
+const REACTIONS = ['💗','😘','😂','😢','😡','🎉']
+const REACTION_LABELS = {'💗':'Beğen','😘':'Öpücük','😂':'Haha','😢':'Üzgün','😡':'Kızgın','🎉':'Yay!'}
 
 const detectEmbed = text => {
   if (!text) return null
@@ -38,18 +38,26 @@ const EmbedPlayer = ({ embed }) => {
 
 // ── Smart Image — Instagram tarzı boyutlandırma ───────────────────
 const SmartImage = ({ src, onClick }) => {
-  const [dims, setDims] = useState(null)
-  const onLoad = e => {
-    const w = e.target.naturalWidth, h = e.target.naturalHeight
-    setDims({ w, h, ratio: h/w })
-  }
-  // Portrait: max 500px yükseklik, Landscape: max 420px yükseklik
-  const isPortrait = dims && dims.ratio > 1
-  const maxH = isPortrait ? 500 : 420
+  const [ratio, setRatio] = useState(null) // height/width
+  const onLoad = e => setRatio(e.target.naturalHeight / e.target.naturalWidth)
+  // Portrait (ratio>1): 4:5 gibi crop, Landscape (ratio<1): full width
+  const isPortrait = ratio && ratio > 1.1
+  const isSquare   = ratio && ratio >= 0.85 && ratio <= 1.1
   return (
-    <div onClick={onClick} style={{ marginTop:10, borderRadius:10, overflow:'hidden', background:'#000', cursor:onClick?'pointer':'default', display:'inline-block', width:'100%', lineHeight:0 }}>
-      <img src={src} alt="" onLoad={onLoad}
-        style={{ width:'100%', maxHeight:maxH, objectFit:'contain', display:'block', background:'#000' }} />
+    <div onClick={onClick} style={{
+      marginTop:10, borderRadius:10, overflow:'hidden',
+      cursor:onClick?'pointer':'default', width:'100%', lineHeight:0,
+      maxHeight: isPortrait ? 560 : 480,
+      background: 'var(--bg)'
+    }}>
+      <img src={src} alt="" onLoad={onLoad} style={{
+        width:'100%',
+        height: isPortrait ? '560px' : isSquare ? '480px' : 'auto',
+        objectFit: isPortrait||isSquare ? 'cover' : 'contain',
+        objectPosition: 'center top',
+        display:'block',
+        maxHeight: isPortrait ? 560 : 480,
+      }} />
     </div>
   )
 }
@@ -223,23 +231,8 @@ export const PostModal = ({ post, onClose, onReact, onDelete, canEdit, onViewPro
   const bottomRef = useRef()
   const commentRef = useRef()
 
-  useEffect(()=>{
-    loadComments()
-    return ()=>{}
-  },[post.id])
-
-  const loadComments = async () => {
-    const { data } = await supabase.from('posts')
-      .select('*, characters(id,name,display_name,avatar_url), replies:posts(id,content,created_at,characters(id,name,display_name,avatar_url))')
-      .eq('parent_id', post.id)
-      .is('posts.parent_id', post.id)
-      .order('created_at')
-    setComments(data||[])
-    setLoading(false)
-  }
-
-  // Basit: sadece direkt yorumları + reply_to_id ile çek
   const loadAllComments = async () => {
+    setLoading(true)
     const { data } = await supabase.from('posts')
       .select('*, characters(id,name,display_name,avatar_url)')
       .eq('parent_id', post.id)
